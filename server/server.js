@@ -70,13 +70,15 @@ if (isPlaceholder) {
     "⚠️  [Notice] MONGO_URI is missing or contains placeholder values. Set a valid MongoDB Atlas connection string in your .env or Render dashboard."
   );
 } else {
-  mongoose
-    .connect(mongoUri)
-    .then(async () => {
-      console.log("MongoDB connected");
+  async function connectWithRetry() {
+    try {
+      await mongoose.connect(mongoUri);
+      console.log("MongoDB connected successfully");
       await seedEvents();
-    })
-    .catch((err) => {
-      console.error("MongoDB connection failed:", err.message);
-    });
+    } catch (err) {
+      console.error("MongoDB connection failed, retrying in 5s:", err.message);
+      setTimeout(connectWithRetry, 5000);
+    }
+  }
+  connectWithRetry();
 }
